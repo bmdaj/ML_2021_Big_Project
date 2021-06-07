@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-# INVERSE: from frequencies to parameters. Input blocks + FC.
+#%% INVERSE: from frequencies to parameters. Input blocks + FC.
 class InverseNN(nn.Module):
     def __init__(self, 
                  N_BLOCKS: int, 
@@ -88,13 +88,16 @@ class InverseNN(nn.Module):
     
     def forward(self, DATA):
         """ All the NN: Blocks + FC """
-        x = self.forward_InverseSplitData(DATA)
+        out_ = []
+        for d in DATA:
+            out_.append(self.forward_InverseSplitData(d))
+        x = torch.tensor(out_)
         x = self.build_FC(x)
         
         return x  # Parameters
 
 
-# DIRECT: from parameters to frequencies. FC only.
+#%% DIRECT: from parameters to frequencies. FC only.
 class DirectNN(nn.Module):
     def __init__(self,
                  D_IN: int, 
@@ -148,7 +151,3 @@ class DirectNN(nn.Module):
 
 
 # - Construct residual NN?
-
-
-
-
