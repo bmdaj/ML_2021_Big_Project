@@ -36,15 +36,25 @@ def antitransform_parameters (parameters, transformer):
     return pd.DataFrame(transformer.inverse_transform(parameters), columns=columns)
 
 
+
 def normalize_bands (frequencies, num_bands = 5, num_k_points  = 31, transformation = "quantile"):
+    
     """
     This function is used to normalize the bands individually.
-    @param frequencies: pd.DataFrame of simulated frequencies per k-points
-    @param num_bands: Number of bands in simulations
-    @param num_k_points: Number of k-points in simulations
-    @param transformation: Type of normalization applied i.e. quantile, standard...
+    @ frequencies: pd.DataFrame of simulated frequencies per k-points
+    @ num_bands: Number of bands in simulations
+    @ num_k_points: Number of k-points in simulations
+    @ transformation: Type of normalization applied i.e. quantile, standard...
     """
+    
+    from sklearn.preprocessing import QuantileTransformer, StandardScaler
+    import pandas as pd
+    
+    transformers = []
+    
+    
     for i in range(int(num_bands)):
+        
         column_start = "Band_"+str(i)+"_k_0"
         column_end = "Band_"+str(i)+"_k_"+str(num_k_points-1)
     
@@ -52,14 +62,18 @@ def normalize_bands (frequencies, num_bands = 5, num_k_points  = 31, transformat
         columns = df_band.columns
         
         if transformation == "quantile":
+        
             t = QuantileTransformer()
             trans_band =  t.fit_transform(df_band)
             trans_band = pd.DataFrame(trans_band, columns=columns)
+            transformers.append(t)
         
         if transformation == "standard":
+        
             t = StandardScaler()
             trans_band =  t.fit_transform(df_band) 
             trans_band = pd.DataFrame(trans_band, columns=columns)
+            transformers.append(t)
             
         if i == 0:
             
@@ -69,4 +83,40 @@ def normalize_bands (frequencies, num_bands = 5, num_k_points  = 31, transformat
             
             transformed_bands = pd.concat([transformed_bands, trans_band], axis=1)
     
-    return transformed_bands
+    return transformed_bands, transformers
+
+
+def unormalize_bands (frequencies, transformers, num_bands = 5, num_k_points  = 31):
+    
+    """
+    This function is used to normalize the bands individually.
+    @ frequencies: pd.DataFrame of simulated frequencies per k-points
+    @ transformers: List of transformers returned by normalizer
+    @ num_bands: Number of bands in simulations
+    @ num_k_points: Number of k-points in simulations
+    """
+    
+    from sklearn.preprocessing import QuantileTransformer, StandardScaler
+    import pandas as pd
+    
+    
+    for i in range(int(num_bands)):
+        
+        column_start = "Band_"+str(i)+"_k_0"
+        column_end = "Band_"+str(i)+"_k_"+str(num_k_points-1)
+    
+        df_band = frequencies.loc[:, column_start : column_end]
+        columns = df_band.columns
+        
+        transformer = transformers [i]
+        antitrans_band = pd.DataFrame(transformer.inverse_transform(df_band), columns=columns)
+            
+        if i == 0:
+            
+            antitransformed_bands = antitrans_band.copy()
+            
+        else:
+            
+            antitransformed_bands = pd.concat([antitransformed_bands, antitrans_band], axis=1)
+    
+    return antitransformed_bands
